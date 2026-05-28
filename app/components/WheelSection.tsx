@@ -34,25 +34,30 @@ const RADIUS = 590;
 const CENTER_X = -155;
 const ANGLE_STEP = 14;
 const VISIBLE_ANGLE = 68;
+const IMAGE_LEFT = CENTER_X + RADIUS + 52;  // right of active number
+const IMAGE_SIZE = 162;
+const CONTENT_LEFT = IMAGE_LEFT + IMAGE_SIZE + 28;
 
 interface Props {
   isActive: boolean;
   onScrollUp: () => void;
+  onScrollDown: () => void;
 }
 
-export default function WheelSection({ isActive, onScrollUp }: Props) {
+export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
   const accumRef = useRef(0);
   const lastFireRef = useRef(0);
 
-  // Sync latest values to refs so the wheel handler never has stale closures
   const activeIdxRef = useRef(activeIdx);
   const isActiveRef = useRef(isActive);
   const onScrollUpRef = useRef(onScrollUp);
+  const onScrollDownRef = useRef(onScrollDown);
   activeIdxRef.current = activeIdx;
   isActiveRef.current = isActive;
   onScrollUpRef.current = onScrollUp;
+  onScrollDownRef.current = onScrollDown;
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -78,6 +83,9 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
 
       if (dir > 0 && current < MILESTONES.length - 1) {
         setActiveIdx(current + 1);
+      } else if (dir > 0 && current === MILESTONES.length - 1) {
+        lastFireRef.current = now + 700;
+        onScrollDownRef.current();
       } else if (dir < 0 && current > 0) {
         setActiveIdx(current - 1);
       } else if (dir < 0 && current === 0) {
@@ -183,14 +191,45 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
         );
       })}
 
-      {/* Content — sits to the right of the active arc number */}
+      {/* Placeholder photo — inside the arc, right of active number */}
       <div
         style={{
           position: "absolute",
-          left: CENTER_X + RADIUS + 55,
+          left: IMAGE_LEFT,
           top: "50%",
           transform: "translateY(-50%)",
-          maxWidth: "42vw",
+          width: IMAGE_SIZE,
+          height: IMAGE_SIZE,
+          background: "#ececea",
+          border: "1.5px dashed #ccc",
+          borderRadius: 10,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          pointerEvents: "none",
+        }}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0c0c0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span style={{ fontFamily: "var(--font-montserrat)", fontSize: "0.58rem", color: "#c0c0c0", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          photo
+        </span>
+      </div>
+
+      {/* Content — memory label + cursive, right of the photo */}
+      <div
+        style={{
+          position: "absolute",
+          left: CONTENT_LEFT,
+          top: "50%",
+          transform: "translateY(-50%)",
+          maxWidth: "calc(100vw - 760px)",
+          minWidth: 180,
         }}
       >
         <AnimatePresence mode="wait">
@@ -217,7 +256,7 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
             <div
               style={{
                 fontFamily: "var(--font-great-vibes)",
-                fontSize: "clamp(2rem, 4vw, 3.2rem)",
+                fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
                 color: "#111",
                 lineHeight: 1.25,
               }}
@@ -244,7 +283,7 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
           whiteSpace: "nowrap",
         }}
       >
-        scroll to navigate · scroll up to return
+        scroll to navigate
       </div>
     </section>
   );
