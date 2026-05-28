@@ -4,57 +4,54 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MILESTONES = [
-  { num: "01", label: "meeting on the red line" },
-  { num: "02", label: "pickleball" },
-  { num: "03", label: "first date" },
-  { num: "04", label: "making it official" },
-  { num: "05", label: "moving into pt" },
-  { num: "06", label: "lolla" },
-  { num: "07", label: "seattle" },
-  { num: "08", label: "northcoast" },
-  { num: "09", label: "cooking gyoza" },
-  { num: "10", label: "nyc visit" },
-  { num: "11", label: "bea" },
-  { num: "12", label: "apples" },
-  { num: "13", label: "halloween" },
-  { num: "14", label: "bowling" },
-  { num: "15", label: "your bday" },
-  { num: "16", label: "ice skating" },
-  { num: "17", label: "mammoth" },
-  { num: "18", label: "seahawks game" },
-  { num: "19", label: "knitting" },
-  { num: "20", label: "nye" },
-  { num: "21", label: "japan" },
-  { num: "22", label: "bakeries" },
-  { num: "23", label: "edc" },
-  { num: "24", label: "365 days" },
+  { date: "5/7/25",   label: "meeting on the red line", body: "you sat down next to me on the train and the whole world shifted. i didn't know it yet, but everything was about to change." },
+  { date: "5/15/25",  label: "pickleball",              body: "our first hangout, pretending to play pickleball while really just falling for each other. you let me win." },
+  { date: "5/22/25",  label: "first date",              body: "dinner that stretched into hours. i didn't want the night to end. i knew then that i was in trouble." },
+  { date: "6/14/25",  label: "making it official",      body: "you asked, i said yes, and i think i floated home that night. officially yours, finally." },
+  { date: "7/1/25",   label: "moving into pt",          body: "watching you build a life in our neighborhood made everything feel permanent in the best way." },
+  { date: "7/18/25",  label: "lolla",                   body: "dancing in the crowd with you, music everywhere, and still the only thing i could focus on was you." },
+  { date: "8/9/25",   label: "seattle",                 body: "rainy days, good coffee, and wandering with nowhere to be. every city feels like home when you're there." },
+  { date: "9/6/25",   label: "northcoast",              body: "a weekend in the sun with all our favorite people. you always make the group better just by being there." },
+  { date: "10/11/25", label: "apples",                  body: "apple picking in the fall, you being impossibly charming about everything. me falling a little more." },
+  { date: "10/31/25", label: "halloween",               body: "your commitment to the bit is one of my favorite things. whatever we dressed up as, you made it iconic." },
+  { date: "11/8/25",  label: "cooking gyoza",           body: "flour on the counter, music on, folding dumplings together. still one of my all-time favorite nights." },
+  { date: "11/22/25", label: "nyc visit",               body: "the city felt electric. but honestly it always does when i'm with you. we could go anywhere." },
+  { date: "12/6/25",  label: "bea",                     body: "watching you with bea — how gentle and patient you are. she chose you, and she has great taste." },
+  { date: "12/13/25", label: "bowling",                 body: "you are annoyingly good at bowling. i'm choosing to find it charming instead of competitive." },
+  { date: "12/31/25", label: "nye",                     body: "kissing you at midnight, surrounded by people we love. the best way to start a year." },
+  { date: "1/4/26",   label: "ice skating",             body: "you held my hand on the ice and i pretended i needed the help. i didn't. i just wanted to hold your hand." },
+  { date: "1/15/26",  label: "your bday",               body: "celebrating you is one of my favorite things. you deserve every good thing, on your birthday and always." },
+  { date: "1/18/26",  label: "seahawks game",           body: "stadium noise, cold air, and you in that jersey. a perfect sunday." },
+  { date: "2/14/26",  label: "mammoth",                 body: "snow and mountains and you. you make even the cold feel warm somehow." },
+  { date: "3/8/26",   label: "knitting",                body: "watching you figure out knitting with complete seriousness and dedication is one of the most endearing things i've ever seen." },
+  { date: "4/2/26",   label: "japan",                   body: "cherry blossoms and street food and getting lost with you. best trip of my life, no contest." },
+  { date: "4/25/26",  label: "bakeries",                body: "finding the best pastries, walking for miles, talking about everything and nothing. an ordinary day made extraordinary." },
+  { date: "5/17/26",  label: "edc",                     body: "dancing until sunrise with you. i'll follow you to any dance floor, anywhere, anytime." },
+  { date: "7/11/26",  label: "365 days",                body: "a whole year of you. of us. i would choose this every single day, a thousand times over." },
 ];
 
-const N    = MILESTONES.length; // 24
-const STEP = 360 / N;          // 15° per item
+const N    = MILESTONES.length;
+const STEP = 360 / N;
 
-// ── Wheel geometry ────────────────────────────────────────────────────────────
-// Radius is huge so only ~45° of arc (≈4 items) fits in the viewport.
-const S       = 2200;            // SVG canvas size (px)
-const CX      = S / 2;          // 1100
-const CY      = S / 2;          // 1100
-const GEAR_R  = 970;             // wheel body radius
-const TOOTH_H = 72;              // tooth height (dramatic at this scale)
-const GEAR_O  = GEAR_R + TOOTH_H; // outer tip = 1042
-const N_TEETH = 36;              // gear teeth
-const ITEM_R  = 912;             // item text radius
-const RING_R  = ITEM_R + 30;    // decorative ring
+const S       = 2200;
+const CX      = S / 2;
+const CY      = S / 2;
+const GEAR_R  = 970;
+const TOOTH_H = 72;
+const GEAR_O  = GEAR_R + TOOTH_H;
+const N_TEETH = 36;
+const ITEM_R  = 912;
+const RING_R  = ITEM_R + 30;
 
-// Aperture window at east (clock-3 / standard 0°)
-const WIN_W = 108;
-const WIN_H = 260;
-const WIN_X = CX + ITEM_R - WIN_W / 2; // centred on east-facing item
+// Landscape aperture at east (clock-3)
+const WIN_W = 260;
+const WIN_H = 100;
+const WIN_X = CX + ITEM_R - WIN_W / 2;
 const WIN_Y = CY - WIN_H / 2;
 
-// Pre-compute gear path once at module load
 function buildGear(): string {
   const step = (2 * Math.PI) / N_TEETH;
-  const hw   = step * 0.19; // half-tooth arc
+  const hw   = step * 0.19;
   let d = "";
   for (let i = 0; i < N_TEETH; i++) {
     const a  = -Math.PI / 2 + i * step;
@@ -71,9 +68,6 @@ function buildGear(): string {
 }
 const GEAR_PATH = buildGear();
 
-// Which item sits at east (clock-3) given CSS rotation R?
-// Item i is at clock angle (i*STEP + R). East = clock-90°.
-// → i*STEP + R = 90  → i = (90 - R)/STEP
 function idxFromRot(rot: number): number {
   return ((Math.round((90 - rot) / STEP) % N) + N) % N;
 }
@@ -85,30 +79,27 @@ interface Props {
 }
 
 export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Props) {
-  // Start with item 0 at east: need rotation = 90°
   const [rotation,  setRotation]  = useState(90);
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging,  setDragging]  = useState(false);
-  const [snapping,  setSnapping]  = useState(false);
 
   const rotRef     = useRef(90);
   const dragRef    = useRef(false);
   const startAng   = useRef(0);
   const startRot   = useRef(0);
-  const snapTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafRef     = useRef<number | null>(null);
   const wheelRef   = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const accumRef   = useRef(0);
   const lastFire   = useRef(0);
 
-  const isActiveRef  = useRef(isActive);
-  const onUpRef      = useRef(onScrollUp);
-  const onDownRef    = useRef(onScrollDown);
+  const isActiveRef = useRef(isActive);
+  const onUpRef     = useRef(onScrollUp);
+  const onDownRef   = useRef(onScrollDown);
   isActiveRef.current = isActive;
   onUpRef.current     = onScrollUp;
   onDownRef.current   = onScrollDown;
 
-  // Angle of pointer from wheel centre (degrees, atan2 convention)
   const getAngle = useCallback((cx: number, cy: number) => {
     const el = wheelRef.current;
     if (!el) return 0;
@@ -119,23 +110,37 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
     );
   }, []);
 
+  // RAF-driven snap so text counter-rotation stays in sync with CSS position
   const snap = useCallback(() => {
     const idx    = idxFromRot(rotRef.current);
     const target = 90 - idx * STEP;
-    if (snapTimer.current) clearTimeout(snapTimer.current);
-    setSnapping(true);
-    setRotation(target);
-    rotRef.current = target;
+    const from   = rotRef.current;
+    const start  = performance.now();
+
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+
+    const tick = (now: number) => {
+      const t     = Math.min((now - start) / 480, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const r     = from + (target - from) * eased;
+      setRotation(r);
+      rotRef.current = r;
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+
     setActiveIdx(idx);
-    snapTimer.current = setTimeout(() => setSnapping(false), 480);
+    rafRef.current = requestAnimationFrame(tick);
   }, []);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isActiveRef.current) return;
       e.currentTarget.setPointerCapture(e.pointerId);
-      if (snapTimer.current) clearTimeout(snapTimer.current);
-      setSnapping(false);
+      if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
       dragRef.current = true;
       setDragging(true);
       startAng.current = getAngle(e.clientX, e.clientY);
@@ -165,7 +170,6 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
     snap();
   }, [snap]);
 
-  // Scroll → slide navigation (drag handles memory browsing)
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -200,12 +204,7 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
         alignItems: "center",
       }}
     >
-      {/* ── Volvelle wheel ────────────────────────────────────────────────── */}
-      {/*
-        Positioned so only the east arc is visible.
-        The gear right edge appears at ~22vw from section left.
-        calc(22vw - (CX + GEAR_O)) = calc(22vw - 2142px)
-      */}
+      {/* Volvelle wheel — only east arc visible */}
       <div
         style={{
           position: "absolute",
@@ -224,9 +223,6 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
             position: "absolute",
             inset: 0,
             transform: `rotate(${rotation}deg)`,
-            transition: snapping
-              ? "transform 0.48s cubic-bezier(0.22,1,0.36,1)"
-              : "none",
             cursor: dragging ? "grabbing" : "grab",
             touchAction: "none",
           }}
@@ -235,42 +231,35 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          <svg
-            width={S}
-            height={S}
-            viewBox={`0 0 ${S} ${S}`}
-            style={{ display: "block" }}
-          >
-            {/* Gear silhouette */}
-            <path d={GEAR_PATH} fill="#eceae8" stroke="#c8c6c4" strokeWidth="0.8" />
-            {/* Wheel face */}
+          <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} style={{ display: "block" }}>
+            {/* Gear teeth — same fill as wheel face, no stroke */}
+            <path d={GEAR_PATH} fill="#f4f3f1" />
+            {/* Wheel face on top of gear path (same color, seamless) */}
             <circle cx={CX} cy={CY} r={GEAR_R} fill="#f4f3f1" />
             {/* Outer ring */}
             <circle cx={CX} cy={CY} r={RING_R} fill="none" stroke="#dcdad8" strokeWidth="1.5" />
-            {/* Inner ring */}
-            <circle cx={CX} cy={CY} r={80}     fill="none" stroke="#dcdad8" strokeWidth="1" />
+            {/* Inner decorative ring */}
+            <circle cx={CX} cy={CY} r={80} fill="none" stroke="#dcdad8" strokeWidth="1" />
             {/* Center pivot */}
-            <circle cx={CX} cy={CY} r={52}  fill="#e2e0de" stroke="#c4c2c0" strokeWidth="1.2" />
-            <circle cx={CX} cy={CY} r={38}  fill="#eeeceb" />
-            <circle cx={CX} cy={CY} r={10}  fill="#b0aeac" />
+            <circle cx={CX} cy={CY} r={52} fill="#e2e0de" stroke="#c4c2c0" strokeWidth="1.2" />
+            <circle cx={CX} cy={CY} r={38} fill="#eeeceb" />
+            <circle cx={CX} cy={CY} r={10} fill="#b0aeac" />
 
-            {/* Tick marks at each item slot on the ring */}
+            {/* Black dot at each item position on the ring */}
             {Array.from({ length: N }, (_, i) => {
               const a = (i * STEP - 90) * (Math.PI / 180);
               return (
-                <line
+                <circle
                   key={i}
-                  x1={CX + (RING_R - 6) * Math.cos(a)}
-                  y1={CY + (RING_R - 6) * Math.sin(a)}
-                  x2={CX + (RING_R + 6) * Math.cos(a)}
-                  y2={CY + (RING_R + 6) * Math.sin(a)}
-                  stroke="#c0bebb"
-                  strokeWidth="1.5"
+                  cx={CX + RING_R * Math.cos(a)}
+                  cy={CY + RING_R * Math.sin(a)}
+                  r={5}
+                  fill="#1a1a1a"
                 />
               );
             })}
 
-            {/* Memory items */}
+            {/* Items — counter-rotate by current wheel rotation to keep text upright */}
             {MILESTONES.map((item, i) => {
               const deg = i * STEP;
               const rad = (deg - 90) * (Math.PI / 180);
@@ -279,34 +268,34 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
               return (
                 <g
                   key={i}
-                  transform={`translate(${tx},${ty}) rotate(${deg})`}
+                  transform={`translate(${tx},${ty}) rotate(${-rotation})`}
                   style={{ pointerEvents: "none" }}
                 >
                   <text
-                    y="-8"
+                    y="-6"
                     textAnchor="middle"
                     style={{
                       fontFamily: "var(--font-montserrat)",
-                      fontSize: "52px",
+                      fontSize: "38px",
                       fontWeight: 800,
                       fill: "#2a2828",
-                      letterSpacing: "-1px",
+                      letterSpacing: "-0.5px",
                     }}
                   >
-                    {item.num}
+                    {item.date}
                   </text>
                   <text
-                    y="36"
+                    y="26"
                     textAnchor="middle"
                     style={{
                       fontFamily: "var(--font-montserrat)",
-                      fontSize: "18px",
+                      fontSize: "14px",
                       fontWeight: 400,
                       fill: "#9a9896",
-                      letterSpacing: "1px",
+                      letterSpacing: "0.5px",
                     }}
                   >
-                    {item.label.slice(0, 14)}
+                    {item.label}
                   </text>
                 </g>
               );
@@ -314,67 +303,39 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           </svg>
         </div>
 
-        {/* Fixed aperture window — does NOT rotate */}
+        {/* Fixed aperture overlay — does not rotate */}
         <svg
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 10,
-          }}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}
           width={S}
           height={S}
           viewBox={`0 0 ${S} ${S}`}
         >
           <defs>
             <mask id="aperture-mask">
-              {/* Frosted only within the gear circle */}
               <circle cx={CX} cy={CY} r={GEAR_R} fill="white" />
-              {/* Clear window at east */}
-              <rect
-                x={WIN_X}
-                y={WIN_Y}
-                width={WIN_W}
-                height={WIN_H}
-                rx={7}
-                fill="black"
-              />
+              {/* Landscape cutout at east */}
+              <rect x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H} rx={6} fill="black" />
             </mask>
           </defs>
 
-          {/* Frosted overlay */}
-          <rect
-            width={S}
-            height={S}
-            fill="rgba(242,241,239,0.76)"
-            mask="url(#aperture-mask)"
-          />
+          {/* Frosted overlay with clear window */}
+          <rect width={S} height={S} fill="rgba(242,241,239,0.78)" mask="url(#aperture-mask)" />
 
           {/* Window frame */}
           <rect
-            x={WIN_X}
-            y={WIN_Y}
-            width={WIN_W}
-            height={WIN_H}
-            rx={7}
-            fill="none"
-            stroke="#3a3836"
-            strokeWidth="1.8"
+            x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H}
+            rx={6} fill="none" stroke="#3a3836" strokeWidth="1.8"
           />
 
-          {/* Small pointer arrow toward wheel center */}
+          {/* Arrow pointing left toward wheel center */}
           <polygon
-            points={`
-              ${WIN_X - 2},${CY - 6}
-              ${WIN_X - 2},${CY + 6}
-              ${WIN_X - 12},${CY}
-            `}
+            points={`${WIN_X - 2},${CY - 6} ${WIN_X - 2},${CY + 6} ${WIN_X - 12},${CY}`}
             fill="#3a3836"
           />
         </svg>
       </div>
 
-      {/* ── Right panel: active memory details ──────────────────────────── */}
+      {/* Right panel — active memory detail */}
       <div
         style={{
           position: "absolute",
@@ -408,55 +369,49 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
                 gap: 8,
               }}
             >
-              <svg
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#c0c0c0"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c0c0c0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <span
-                style={{
-                  fontFamily: "var(--font-montserrat)",
-                  fontSize: "0.58rem",
-                  color: "#c0c0c0",
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                }}
-              >
+              <span style={{ fontFamily: "var(--font-montserrat)", fontSize: "0.58rem", color: "#c0c0c0", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                 photo
               </span>
             </div>
 
-            <div
-              style={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.68rem",
-                fontWeight: 600,
-                color: "#aaa",
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                marginBottom: "0.6rem",
-              }}
-            >
-              memory {MILESTONES[activeIdx].num}
+            {/* Date */}
+            <div style={{
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.68rem",
+              fontWeight: 600,
+              color: "#aaa",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              marginBottom: "0.3rem",
+            }}>
+              {MILESTONES[activeIdx].date}
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-great-vibes)",
-                fontSize: "clamp(1.8rem, 2.8vw, 2.6rem)",
-                color: "#111",
-                lineHeight: 1.25,
-              }}
-            >
+
+            {/* Label */}
+            <div style={{
+              fontFamily: "var(--font-great-vibes)",
+              fontSize: "clamp(1.8rem, 2.8vw, 2.6rem)",
+              color: "#111",
+              lineHeight: 1.25,
+              marginBottom: "0.9rem",
+            }}>
               {MILESTONES[activeIdx].label}
+            </div>
+
+            {/* Body text */}
+            <div style={{
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.78rem",
+              color: "#777",
+              lineHeight: 1.75,
+              letterSpacing: "0.01em",
+            }}>
+              {MILESTONES[activeIdx].body}
             </div>
           </motion.div>
         </AnimatePresence>
