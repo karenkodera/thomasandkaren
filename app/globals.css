@@ -1,22 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --cream: #FBF6EE;
-  --parchment: #F2E6D0;
-  --warm-white: #FEFAF5;
-  --crimson: #8B1A1A;
-  --deep-crimson: #6B1414;
-  --blush: #C4747A;
-  --warm-brown: #8B6050;
-  --ink: #2C1810;
-}
-
-@theme inline {
-  --font-script: var(--font-dancing-script);
-  --font-serif: var(--font-playfair);
-  --font-hand: var(--font-caveat);
-}
-
 *,
 *::before,
 *::after {
@@ -24,8 +7,11 @@
 }
 
 body {
-  background: var(--cream);
-  color: var(--ink);
-  overflow-x: hidden;
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
+}
+
+@keyframes slot-up {
+  from { transform: translateY(115%); }
+  to   { transform: translateY(0);    }
 }
