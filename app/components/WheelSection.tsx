@@ -30,49 +30,53 @@ const MILESTONES = [
   { num: "24", label: "365 days" },
 ];
 
-const N     = MILESTONES.length;
-const STEP  = 360 / N; // 15° per item
+const N    = MILESTONES.length; // 24
+const STEP = 360 / N;          // 15° per item
 
-// Wheel geometry (all in SVG px)
-const S       = 580;   // SVG canvas size
-const CX      = S / 2; // 290
-const CY      = S / 2; // 290
-const GEAR_R  = 244;   // wheel body radius
-const TOOTH_H = 19;    // gear tooth height
-const GEAR_O  = GEAR_R + TOOTH_H; // outer tip radius = 263
-const N_TEETH = 48;    // gear teeth count
-const ITEM_R  = 198;   // radius where item text sits
-const RING_R  = ITEM_R + 28; // decorative ring
-const HOLE_R  = 38;    // center pivot hole
+// ── Wheel geometry ────────────────────────────────────────────────────────────
+// Radius is huge so only ~45° of arc (≈4 items) fits in the viewport.
+const S       = 2200;            // SVG canvas size (px)
+const CX      = S / 2;          // 1100
+const CY      = S / 2;          // 1100
+const GEAR_R  = 970;             // wheel body radius
+const TOOTH_H = 72;              // tooth height (dramatic at this scale)
+const GEAR_O  = GEAR_R + TOOTH_H; // outer tip = 1042
+const N_TEETH = 36;              // gear teeth
+const ITEM_R  = 912;             // item text radius
+const RING_R  = ITEM_R + 30;    // decorative ring
 
-// Pre-compute gear path at module load
+// Aperture window at east (clock-3 / standard 0°)
+const WIN_W = 108;
+const WIN_H = 260;
+const WIN_X = CX + ITEM_R - WIN_W / 2; // centred on east-facing item
+const WIN_Y = CY - WIN_H / 2;
+
+// Pre-compute gear path once at module load
 function buildGear(): string {
   const step = (2 * Math.PI) / N_TEETH;
-  const hw   = step * 0.21; // half-tooth arc width
+  const hw   = step * 0.19; // half-tooth arc
   let d = "";
   for (let i = 0; i < N_TEETH; i++) {
     const a  = -Math.PI / 2 + i * step;
-    const a0 = a - step / 2 + hw * 1.05;
+    const a0 = a - step / 2 + hw * 1.06;
     const a1 = a - hw;
     const a2 = a + hw;
-    const a3 = a + step / 2 - hw * 1.05;
-    const ri = GEAR_R, ro = GEAR_O;
-    const pt = (r: number, ang: number) => `${CX + r * Math.cos(ang)},${CY + r * Math.sin(ang)}`;
-    d += (i === 0 ? `M` : ` L`) + pt(ri, a0);
-    d += ` L${pt(ro, a1)} L${pt(ro, a2)} L${pt(ri, a3)}`;
+    const a3 = a + step / 2 - hw * 1.06;
+    const p  = (r: number, ang: number) =>
+      `${CX + r * Math.cos(ang)},${CY + r * Math.sin(ang)}`;
+    d += (i === 0 ? "M" : " L") + p(GEAR_R, a0);
+    d += ` L${p(GEAR_O, a1)} L${p(GEAR_O, a2)} L${p(GEAR_R, a3)}`;
   }
   return d + " Z";
 }
 const GEAR_PATH = buildGear();
 
+// Which item sits at east (clock-3) given CSS rotation R?
+// Item i is at clock angle (i*STEP + R). East = clock-90°.
+// → i*STEP + R = 90  → i = (90 - R)/STEP
 function idxFromRot(rot: number): number {
-  return ((Math.round(-rot / STEP) % N) + N) % N;
+  return ((Math.round((90 - rot) / STEP) % N) + N) % N;
 }
-
-// Window aperture geometry
-const WIN_W = 108, WIN_H = 48;
-const WIN_X = CX - WIN_W / 2;
-const WIN_Y = CY - ITEM_R - WIN_H / 2 + 3;
 
 interface Props {
   isActive: boolean;
@@ -81,20 +85,21 @@ interface Props {
 }
 
 export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Props) {
-  const [rotation,  setRotation]  = useState(0);
+  // Start with item 0 at east: need rotation = 90°
+  const [rotation,  setRotation]  = useState(90);
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging,  setDragging]  = useState(false);
   const [snapping,  setSnapping]  = useState(false);
 
-  const rotRef      = useRef(0);
-  const dragRef     = useRef(false);
-  const startAng    = useRef(0);
-  const startRot    = useRef(0);
-  const snapTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wheelRef    = useRef<HTMLDivElement>(null);
-  const sectionRef  = useRef<HTMLDivElement>(null);
-  const accumRef    = useRef(0);
-  const lastFire    = useRef(0);
+  const rotRef     = useRef(90);
+  const dragRef    = useRef(false);
+  const startAng   = useRef(0);
+  const startRot   = useRef(0);
+  const snapTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wheelRef   = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const accumRef   = useRef(0);
+  const lastFire   = useRef(0);
 
   const isActiveRef  = useRef(isActive);
   const onUpRef      = useRef(onScrollUp);
@@ -103,45 +108,55 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
   onUpRef.current     = onScrollUp;
   onDownRef.current   = onScrollDown;
 
+  // Angle of pointer from wheel centre (degrees, atan2 convention)
   const getAngle = useCallback((cx: number, cy: number) => {
     const el = wheelRef.current;
     if (!el) return 0;
     const r = el.getBoundingClientRect();
-    return Math.atan2(cy - (r.top + r.height / 2), cx - (r.left + r.width / 2)) * (180 / Math.PI);
+    return (
+      Math.atan2(cy - (r.top + r.height / 2), cx - (r.left + r.width / 2)) *
+      (180 / Math.PI)
+    );
   }, []);
 
   const snap = useCallback(() => {
     const idx    = idxFromRot(rotRef.current);
-    const target = -idx * STEP;
+    const target = 90 - idx * STEP;
     if (snapTimer.current) clearTimeout(snapTimer.current);
     setSnapping(true);
     setRotation(target);
     rotRef.current = target;
     setActiveIdx(idx);
-    snapTimer.current = setTimeout(() => setSnapping(false), 450);
+    snapTimer.current = setTimeout(() => setSnapping(false), 480);
   }, []);
 
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isActiveRef.current) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    if (snapTimer.current) clearTimeout(snapTimer.current);
-    setSnapping(false);
-    dragRef.current = true;
-    setDragging(true);
-    startAng.current = getAngle(e.clientX, e.clientY);
-    startRot.current = rotRef.current;
-  }, [getAngle]);
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!isActiveRef.current) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      if (snapTimer.current) clearTimeout(snapTimer.current);
+      setSnapping(false);
+      dragRef.current = true;
+      setDragging(true);
+      startAng.current = getAngle(e.clientX, e.clientY);
+      startRot.current = rotRef.current;
+    },
+    [getAngle]
+  );
 
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
-    let delta = getAngle(e.clientX, e.clientY) - startAng.current;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
-    const newRot = startRot.current + delta;
-    setRotation(newRot);
-    rotRef.current = newRot;
-    setActiveIdx(idxFromRot(newRot));
-  }, [getAngle]);
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!dragRef.current) return;
+      let delta = getAngle(e.clientX, e.clientY) - startAng.current;
+      if (delta > 180) delta -= 360;
+      if (delta < -180) delta += 360;
+      const newRot = startRot.current + delta;
+      setRotation(newRot);
+      rotRef.current = newRot;
+      setActiveIdx(idxFromRot(newRot));
+    },
+    [getAngle]
+  );
 
   const onPointerUp = useCallback(() => {
     if (!dragRef.current) return;
@@ -150,7 +165,7 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
     snap();
   }, [snap]);
 
-  // Scroll → slide navigation only (drag handles memory navigation)
+  // Scroll → slide navigation (drag handles memory browsing)
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -175,18 +190,43 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
   return (
     <section
       ref={sectionRef}
-      style={{ width: "100%", height: "100vh", background: "#f8f8f6", position: "relative", overflow: "hidden", display: "flex", alignItems: "center" }}
+      style={{
+        width: "100%",
+        height: "100vh",
+        background: "#f8f8f6",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+      }}
     >
-      {/* ── Volvelle wheel ── */}
-      <div style={{ position: "absolute", left: "38%", top: "50%", transform: "translate(-50%, -50%)", width: S, height: S, userSelect: "none" }}>
-
+      {/* ── Volvelle wheel ────────────────────────────────────────────────── */}
+      {/*
+        Positioned so only the east arc is visible.
+        The gear right edge appears at ~22vw from section left.
+        calc(22vw - (CX + GEAR_O)) = calc(22vw - 2142px)
+      */}
+      <div
+        style={{
+          position: "absolute",
+          left: `calc(22vw - ${CX + GEAR_O}px)`,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: S,
+          height: S,
+          userSelect: "none",
+        }}
+      >
         {/* Rotating disk */}
         <div
           ref={wheelRef}
           style={{
-            position: "absolute", inset: 0,
+            position: "absolute",
+            inset: 0,
             transform: `rotate(${rotation}deg)`,
-            transition: snapping ? "transform 0.45s cubic-bezier(0.22,1,0.36,1)" : "none",
+            transition: snapping
+              ? "transform 0.48s cubic-bezier(0.22,1,0.36,1)"
+              : "none",
             cursor: dragging ? "grabbing" : "grab",
             touchAction: "none",
           }}
@@ -195,29 +235,37 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+          <svg
+            width={S}
+            height={S}
+            viewBox={`0 0 ${S} ${S}`}
+            style={{ display: "block" }}
+          >
             {/* Gear silhouette */}
-            <path d={GEAR_PATH} fill="#edecea" stroke="#cccac8" strokeWidth="0.7"/>
+            <path d={GEAR_PATH} fill="#eceae8" stroke="#c8c6c4" strokeWidth="0.8" />
             {/* Wheel face */}
-            <circle cx={CX} cy={CY} r={GEAR_R} fill="#f4f4f2"/>
-            {/* Outer decorative ring */}
-            <circle cx={CX} cy={CY} r={RING_R} fill="none" stroke="#dddbd9" strokeWidth="1.2"/>
+            <circle cx={CX} cy={CY} r={GEAR_R} fill="#f4f3f1" />
+            {/* Outer ring */}
+            <circle cx={CX} cy={CY} r={RING_R} fill="none" stroke="#dcdad8" strokeWidth="1.5" />
             {/* Inner ring */}
-            <circle cx={CX} cy={CY} r={HOLE_R + 18} fill="none" stroke="#dddbd9" strokeWidth="0.8"/>
+            <circle cx={CX} cy={CY} r={80}     fill="none" stroke="#dcdad8" strokeWidth="1" />
             {/* Center pivot */}
-            <circle cx={CX} cy={CY} r={HOLE_R}      fill="#e4e2e0" stroke="#c8c6c4" strokeWidth="1"/>
-            <circle cx={CX} cy={CY} r={HOLE_R - 11} fill="#efefed"/>
-            <circle cx={CX} cy={CY} r={7}            fill="#b8b6b4"/>
+            <circle cx={CX} cy={CY} r={52}  fill="#e2e0de" stroke="#c4c2c0" strokeWidth="1.2" />
+            <circle cx={CX} cy={CY} r={38}  fill="#eeeceb" />
+            <circle cx={CX} cy={CY} r={10}  fill="#b0aeac" />
 
-            {/* Divider ticks at each item slot */}
+            {/* Tick marks at each item slot on the ring */}
             {Array.from({ length: N }, (_, i) => {
-              const a = (i * STEP - 90) * Math.PI / 180;
+              const a = (i * STEP - 90) * (Math.PI / 180);
               return (
                 <line
                   key={i}
-                  x1={CX + (RING_R - 4) * Math.cos(a)} y1={CY + (RING_R - 4) * Math.sin(a)}
-                  x2={CX + (RING_R + 4) * Math.cos(a)} y2={CY + (RING_R + 4) * Math.sin(a)}
-                  stroke="#c8c6c4" strokeWidth="1"
+                  x1={CX + (RING_R - 6) * Math.cos(a)}
+                  y1={CY + (RING_R - 6) * Math.sin(a)}
+                  x2={CX + (RING_R + 6) * Math.cos(a)}
+                  y2={CY + (RING_R + 6) * Math.sin(a)}
+                  stroke="#c0bebb"
+                  strokeWidth="1.5"
                 />
               );
             })}
@@ -225,17 +273,39 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
             {/* Memory items */}
             {MILESTONES.map((item, i) => {
               const deg = i * STEP;
-              const rad = (deg - 90) * Math.PI / 180;
+              const rad = (deg - 90) * (Math.PI / 180);
               const tx  = CX + ITEM_R * Math.cos(rad);
               const ty  = CY + ITEM_R * Math.sin(rad);
               return (
-                <g key={i} transform={`translate(${tx},${ty}) rotate(${deg})`}>
-                  <text y="-3" textAnchor="middle"
-                    style={{ fontFamily: "var(--font-montserrat)", fontSize: "11px", fontWeight: 700, fill: "#2e2e2e", letterSpacing: "-0.01em" }}>
+                <g
+                  key={i}
+                  transform={`translate(${tx},${ty}) rotate(${deg})`}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <text
+                    y="-8"
+                    textAnchor="middle"
+                    style={{
+                      fontFamily: "var(--font-montserrat)",
+                      fontSize: "52px",
+                      fontWeight: 800,
+                      fill: "#2a2828",
+                      letterSpacing: "-1px",
+                    }}
+                  >
                     {item.num}
                   </text>
-                  <text y="9" textAnchor="middle"
-                    style={{ fontFamily: "var(--font-montserrat)", fontSize: "6px", fontWeight: 400, fill: "#999", letterSpacing: "0.03em" }}>
+                  <text
+                    y="36"
+                    textAnchor="middle"
+                    style={{
+                      fontFamily: "var(--font-montserrat)",
+                      fontSize: "18px",
+                      fontWeight: 400,
+                      fill: "#9a9896",
+                      letterSpacing: "1px",
+                    }}
+                  >
                     {item.label.slice(0, 14)}
                   </text>
                 </g>
@@ -244,85 +314,171 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           </svg>
         </div>
 
-        {/* Fixed window layer — does NOT rotate */}
+        {/* Fixed aperture window — does NOT rotate */}
         <svg
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}
-          width={S} height={S} viewBox={`0 0 ${S} ${S}`}
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            zIndex: 10,
+          }}
+          width={S}
+          height={S}
+          viewBox={`0 0 ${S} ${S}`}
         >
           <defs>
-            <mask id="vol-mask">
-              {/* Frosted over the whole circle… */}
-              <circle cx={CX} cy={CY} r={GEAR_R} fill="white"/>
-              {/* …except the aperture window */}
-              <rect x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H} rx={5} fill="black"/>
+            <mask id="aperture-mask">
+              {/* Frosted only within the gear circle */}
+              <circle cx={CX} cy={CY} r={GEAR_R} fill="white" />
+              {/* Clear window at east */}
+              <rect
+                x={WIN_X}
+                y={WIN_Y}
+                width={WIN_W}
+                height={WIN_H}
+                rx={7}
+                fill="black"
+              />
             </mask>
           </defs>
 
           {/* Frosted overlay */}
-          <rect width={S} height={S} fill="rgba(244,244,242,0.74)" mask="url(#vol-mask)"/>
-
-          {/* Window frame */}
-          <rect x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H} rx={5}
-            fill="none" stroke="#3c3c3c" strokeWidth="1.6"/>
-
-          {/* Pointer arrow below window */}
-          <polygon
-            points={`${CX - 5},${WIN_Y + WIN_H + 2} ${CX + 5},${WIN_Y + WIN_H + 2} ${CX},${WIN_Y + WIN_H + 10}`}
-            fill="#3c3c3c"
+          <rect
+            width={S}
+            height={S}
+            fill="rgba(242,241,239,0.76)"
+            mask="url(#aperture-mask)"
           />
 
-          {/* "DRAG" label at bottom of wheel face */}
-          <text x={CX} y={CY + GEAR_R - 22} textAnchor="middle"
-            style={{ fontFamily: "var(--font-montserrat)", fontSize: "7px", fontWeight: 600, fill: "#bbb", letterSpacing: "0.25em" }}>
-            DRAG TO ROTATE
-          </text>
+          {/* Window frame */}
+          <rect
+            x={WIN_X}
+            y={WIN_Y}
+            width={WIN_W}
+            height={WIN_H}
+            rx={7}
+            fill="none"
+            stroke="#3a3836"
+            strokeWidth="1.8"
+          />
+
+          {/* Small pointer arrow toward wheel center */}
+          <polygon
+            points={`
+              ${WIN_X - 2},${CY - 6}
+              ${WIN_X - 2},${CY + 6}
+              ${WIN_X - 12},${CY}
+            `}
+            fill="#3a3836"
+          />
         </svg>
       </div>
 
-      {/* ── Right panel: active memory details ── */}
-      <div style={{ position: "absolute", left: "62%", top: "50%", transform: "translateY(-50%)", width: "30%", maxWidth: 300 }}>
+      {/* ── Right panel: active memory details ──────────────────────────── */}
+      <div
+        style={{
+          position: "absolute",
+          left: "28vw",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "clamp(220px, 32vw, 340px)",
+        }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIdx}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.22 }}
           >
             {/* Placeholder image */}
-            <div style={{
-              width: "100%", aspectRatio: "4/3",
-              background: "#ececea", border: "1.5px dashed #ccc",
-              borderRadius: 10, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              marginBottom: "1.1rem", gap: 8,
-            }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-                stroke="#c0c0c0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: "4/3",
+                background: "#ececea",
+                border: "1.5px dashed #ccc",
+                borderRadius: 10,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: "1.1rem",
+                gap: 8,
+              }}
+            >
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#c0c0c0"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
               </svg>
-              <span style={{ fontFamily: "var(--font-montserrat)", fontSize: "0.58rem", color: "#c0c0c0", letterSpacing: "0.12em", textTransform: "uppercase" }}>photo</span>
+              <span
+                style={{
+                  fontFamily: "var(--font-montserrat)",
+                  fontSize: "0.58rem",
+                  color: "#c0c0c0",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                photo
+              </span>
             </div>
 
-            <div style={{ fontFamily: "var(--font-montserrat)", fontSize: "0.68rem", fontWeight: 600, color: "#aaa", letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "0.6rem" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-montserrat)",
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                color: "#aaa",
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                marginBottom: "0.6rem",
+              }}
+            >
               memory {MILESTONES[activeIdx].num}
             </div>
-            <div style={{ fontFamily: "var(--font-great-vibes)", fontSize: "clamp(1.8rem, 2.8vw, 2.6rem)", color: "#111", lineHeight: 1.25 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-great-vibes)",
+                fontSize: "clamp(1.8rem, 2.8vw, 2.6rem)",
+                color: "#111",
+                lineHeight: 1.25,
+              }}
+            >
               {MILESTONES[activeIdx].label}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Bottom hint */}
-      <div style={{
-        position: "absolute", bottom: "1.6rem", left: "50%", transform: "translateX(-50%)",
-        fontFamily: "var(--font-montserrat)", fontSize: "0.58rem", color: "#ccc",
-        letterSpacing: "0.18em", textTransform: "uppercase", pointerEvents: "none", whiteSpace: "nowrap",
-      }}>
-        drag wheel · scroll to navigate
+      {/* Hint */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "1.6rem",
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontFamily: "var(--font-montserrat)",
+          fontSize: "0.58rem",
+          color: "#ccc",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
+        drag wheel · scroll to navigate slides
       </div>
     </section>
   );
