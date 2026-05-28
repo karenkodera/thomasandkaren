@@ -164,8 +164,8 @@ export default function Hero() {
                 display: "flex",
                 alignItems: "center",
                 gap: "0.25em",
-                fontFamily: "var(--font-atomic-age)",
-                fontWeight: 400,
+                fontFamily: "var(--font-montserrat)",
+                fontWeight: 800,
                 color: "#000",
                 lineHeight: 1,
               }}
