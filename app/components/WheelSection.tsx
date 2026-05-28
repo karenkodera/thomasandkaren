@@ -68,7 +68,7 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
       accumRef.current += delta;
 
       const now = Date.now();
-      if (Math.abs(accumRef.current) < 40 || now - lastFireRef.current < 160) return;
+      if (Math.abs(accumRef.current) < 40 || now - lastFireRef.current < 600) return;
 
       lastFireRef.current = now;
       const dir = accumRef.current > 0 ? 1 : -1;
@@ -183,21 +183,20 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
         );
       })}
 
-      {/* Right side: active milestone label */}
+      {/* Content — sits to the right of the active arc number */}
       <div
         style={{
           position: "absolute",
-          right: "10%",
+          left: CENTER_X + RADIUS + 55,
           top: "50%",
           transform: "translateY(-50%)",
-          width: "36%",
-          minWidth: 260,
+          maxWidth: "42vw",
         }}
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeIdx}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
@@ -205,12 +204,12 @@ export default function WheelSection({ isActive, onScrollUp }: Props) {
             <div
               style={{
                 fontFamily: "var(--font-montserrat)",
-                fontSize: "0.66rem",
+                fontSize: "0.7rem",
                 fontWeight: 600,
-                color: "#bbb",
-                letterSpacing: "0.24em",
+                color: "#aaa",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                marginBottom: "0.9rem",
+                marginBottom: "0.65rem",
               }}
             >
               memory {MILESTONES[activeIdx].num}

@@ -18,7 +18,7 @@ export default function PageWrapper() {
       animating.current = true;
 
       const h = containerRef.current?.offsetHeight ?? window.innerHeight;
-      const targetY = target === 1 ? h : 0;
+      const targetY = target === 1 ? -h : 0;
 
       animate(slide1Y, targetY, {
         duration: 0.75,
