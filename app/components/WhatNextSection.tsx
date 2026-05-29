@@ -8,21 +8,23 @@ import { motion } from "framer-motion";
 const MAP_EMBED_SRC =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d193595.1583086943!2d-74.11976397304903!3d40.697663748744296!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c24fa5d33f083b%3Ac80b8f06e177fe62!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2sus!4v1748468000000!5m2!1sen!2sus";
 
-const MAP_LINK = "https://maps.app.goo.gl/"; // replace with your shareable map link
 
 interface Props {
   isActive: boolean;
   onScrollUp: () => void;
+  onScrollDown: () => void;
 }
 
-export default function WhatNextSection({ isActive, onScrollUp }: Props) {
+export default function WhatNextSection({ isActive, onScrollUp, onScrollDown }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const accumRef   = useRef(0);
   const lastFire   = useRef(0);
-  const isActiveRef = useRef(isActive);
-  const onUpRef     = useRef(onScrollUp);
-  isActiveRef.current = isActive;
-  onUpRef.current     = onScrollUp;
+  const isActiveRef  = useRef(isActive);
+  const onUpRef      = useRef(onScrollUp);
+  const onDownRef    = useRef(onScrollDown);
+  isActiveRef.current  = isActive;
+  onUpRef.current      = onScrollUp;
+  onDownRef.current    = onScrollDown;
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -39,7 +41,7 @@ export default function WhatNextSection({ isActive, onScrollUp }: Props) {
       lastFire.current = now + 700;
       const dir = accumRef.current > 0 ? 1 : -1;
       accumRef.current = 0;
-      if (dir < 0) onUpRef.current();
+      if (dir < 0) onUpRef.current(); else onDownRef.current();
     };
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
@@ -106,75 +108,7 @@ export default function WhatNextSection({ isActive, onScrollUp }: Props) {
             />
           </div>
 
-          {/* Placeholder image */}
-          <div
-            style={{
-              width: "clamp(160px, 22vw, 260px)",
-              flexShrink: 0,
-              borderRadius: 12,
-              border: "1.5px dashed #ddd",
-              background: "#fafafa",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-            }}
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ccc"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            <span
-              style={{
-                fontFamily: "var(--font-montserrat)",
-                fontSize: "0.6rem",
-                color: "#ccc",
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-              }}
-            >
-              photo
-            </span>
-          </div>
         </div>
-
-        {/* Map link */}
-        <a
-          href={MAP_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily: "var(--font-montserrat)",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            color: "#111",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            borderBottom: "1.5px solid #111",
-            paddingBottom: "0.1rem",
-            width: "fit-content",
-          }}
-        >
-          open in google maps
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 10L10 2M10 2H5M10 2V7" />
-          </svg>
-        </a>
 
         {/* Scroll hint */}
         <div

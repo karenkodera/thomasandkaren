@@ -131,8 +131,9 @@ export default function ReasonsSection({ isActive, onScrollUp, onScrollDown }: P
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4 }}
                   style={{
-                    fontFamily: "var(--font-great-vibes)",
-                    fontSize: "clamp(1.1rem, 1.8vw, 1.5rem)",
+                    fontFamily: "var(--font-montserrat)",
+                    fontSize: "clamp(0.78rem, 1.2vw, 1rem)",
+                    fontWeight: 500,
                     color: "#111",
                     lineHeight: 1,
                     whiteSpace: "nowrap",
@@ -186,19 +187,6 @@ export default function ReasonsSection({ isActive, onScrollUp, onScrollDown }: P
           </button>
         </div>
 
-        {/* Scroll-back hint */}
-        <div
-          style={{
-            fontFamily: "var(--font-montserrat)",
-            fontSize: "0.6rem",
-            color: "#ddd",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            textAlign: "center",
-          }}
-        >
-          scroll to navigate
-        </div>
       </div>
     </section>
   );

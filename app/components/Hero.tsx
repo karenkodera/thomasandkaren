@@ -61,13 +61,17 @@ function HeartBurst() {
   );
 }
 
-export default function Hero() {
-  const [displayed,  setDisplayed]  = useState("");
-  const [done,       setDone]       = useState(false);
-  const [cursorOn,   setCursorOn]   = useState(true);
-  const [showDays,   setShowDays]   = useState(false);
-  const [flipNum,    setFlipNum]    = useState(0);
-  const [celebrate,  setCelebrate]  = useState(false);
+interface Props {
+  onDismiss: () => void;
+}
+
+export default function Hero({ onDismiss }: Props) {
+  const [displayed, setDisplayed] = useState("");
+  const [done,      setDone]      = useState(false);
+  const [cursorOn,  setCursorOn]  = useState(true);
+  const [showDays,  setShowDays]  = useState(false);
+  const [flipNum,   setFlipNum]   = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -105,33 +109,56 @@ export default function Hero() {
   const cursorVisible = done && !showDays && cursorOn;
 
   return (
-    <main
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
       style={{
-        minHeight: "100vh",
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#fff",
       }}
     >
-      {/*
-        Both elements are always rendered so layout is stable from the start.
-        The typewriter text never jumps because the space below it is always reserved.
-      */}
+      {/* Backdrop */}
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.18)",
+          backdropFilter: "blur(6px)",
+        }}
+      />
+
+      {/* Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 8 }}
+        transition={{ type: "spring", damping: 28, stiffness: 300, delay: 0.05 }}
+        style={{
+          position: "relative",
+          background: "#fff",
+          borderRadius: 20,
+          padding: "4rem 4.5rem 3.8rem",
+          width: "min(600px, 90vw)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: "1.6rem",
+          zIndex: 1,
+          boxShadow: "0 24px 80px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
         }}
       >
-        {/* Typewriter text — static position, no layout animation */}
+        {/* Typewriter */}
         <p
           style={{
             margin: 0,
             fontFamily: "var(--font-great-vibes)",
-            fontSize: "1.35rem",
+            fontSize: "1.4rem",
             fontWeight: 400,
             color: "#888",
             letterSpacing: "0.04em",
@@ -142,7 +169,7 @@ export default function Hero() {
           <span style={{ opacity: cursorVisible ? 1 : 0 }}>|</span>
         </p>
 
-        {/* HAPPY 365 DAYS! — always rendered to hold space; fades in when showDays */}
+        {/* HAPPY 365 DAYS counter */}
         <motion.div
           initial={false}
           animate={showDays
@@ -153,7 +180,7 @@ export default function Hero() {
         >
           <div
             style={{
-              fontSize: "clamp(3.5rem, 11vw, 5.5rem)",
+              fontSize: "clamp(3rem, 10vw, 5rem)",
               display: "flex",
               alignItems: "center",
               gap: "0.25em",
@@ -163,10 +190,7 @@ export default function Hero() {
               lineHeight: 1,
             }}
           >
-            {/* HAPPY — fixed width so the number animation doesn't shift it */}
             <span style={{ fontSize: "0.48em", lineHeight: 1 }}>HAPPY</span>
-
-            {/* Slot-machine number — fixed width prevents DAYS! from jumping */}
             <div style={{ position: "relative", minWidth: "1.65em", textAlign: "center" }}>
               <div style={{ overflow: "hidden", height: "1em", lineHeight: 1 }}>
                 <span
@@ -185,12 +209,59 @@ export default function Hero() {
               </div>
               {celebrate && <HeartBurst />}
             </div>
-
-            {/* DAYS! */}
             <span style={{ fontSize: "0.48em", lineHeight: 1 }}>DAYS!</span>
           </div>
         </motion.div>
-      </div>
-    </main>
+
+        {/* Nav hint + button — fade in after celebrate */}
+        <motion.div
+          initial={false}
+          animate={celebrate ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+          transition={{ duration: 0.5, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1.1rem",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.57rem",
+              color: "#bbb",
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+            }}
+          >
+            drag or press ↑ ↓ to navigate timeline
+          </div>
+
+          <button
+            onClick={onDismiss}
+            style={{
+              padding: "0.75rem 2.2rem",
+              background: "#111",
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              fontFamily: "var(--font-montserrat)",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              transition: "background 0.2s",
+              width: "100%",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#333")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#111")}
+          >
+            let&apos;s go!
+          </button>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
