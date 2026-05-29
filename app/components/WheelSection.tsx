@@ -26,14 +26,15 @@ const MILESTONES: { date: string; label: string; body: string; video?: string; i
   { date: "11/27/25",label: "nov 27",                  body: "remember we ate this in like 2 sittings", images: ["/nov%2027.jpeg"] },
   { date: "11/28/25",label: "nov 28",                  body: "the one time i made you sit in the booth bc it was super uncomfy and then i took this photo of you looking really uncomfy", images: ["/nov%2028.jpeg"] },
   { date: "11/30/25",label: "nov 30",                  body: "when you watched me play in the snow on YOUR birthday. you really let me get away with so much 😛", images: ["/nov%2030.jpeg"] },
-  { date: "12/14/25",label: "dec 14",                  body: "", images: ["/dec14_1.jpeg", "/dec14_2.jpeg"] },
-  { date: "12/25/25",label: "dec 25",                  body: "", images: ["/dec25_1.jpeg", "/dec25_2.jpeg"] },
-  { date: "1/2/26",  label: "jan 2",                   body: "", images: ["/jan2_1.jpeg", "/jan2_2.jpeg"] },
-  { date: "1/8/26",  label: "jan 8",                   body: "", video: "/jan%208.MOV" },
-  { date: "1/11/26", label: "jan 11",                  body: "", images: ["/jan11_1.jpeg", "/jan11_2.jpeg"] },
-  { date: "2/12/26", label: "feb 12",                  body: "", images: ["/feb%2012.jpeg"] },
-  { date: "3/8/26",  label: "mar 8",                   body: "", images: ["/mar%208.jpeg"] },
-  { date: "5/18/26", label: "may 18",                  body: "", images: ["/may18_1.jpeg", "/may18_2.jpeg"] },
+  { date: "12/14/25",label: "dec 14",                  body: "mouse trauma 🐭😱", images: ["/dec14_1.jpeg", "/dec14_2.jpeg"] },
+  { date: "12/25/25",label: "dec 25",                  body: "i love that you always try things i like with me 🥹", images: ["/dec25_1.jpeg", "/dec25_2.jpeg"] },
+  { date: "1/2/26",  label: "jan 2",                   body: "when you met my friends and fit in way too well i got scared they corrupted you", images: ["/jan2_1.jpeg", "/jan2_2.jpeg"] },
+  { date: "1/8/26",  label: "jan 8",                   body: "whatever this was", video: "/jan%208.MOV" },
+  { date: "1/11/26", label: "jan 11",                  body: "went spearfishing in the sturgeon and became interested in cutlery", images: ["/jan11_1.jpeg", "/jan11_2.jpeg"] },
+  { date: "2/12/26", label: "feb 12",                  body: "then you came all the way to japan and met my grandparents :0 so crazy", images: ["/feb%2012.jpeg"] },
+  { date: "3/8/26",  label: "mar 8",                   body: "i convinced you to climb top rope and you did so good!", images: ["/mar%208.jpeg"] },
+  { date: "5/18/26", label: "may 18",                  body: "i'm the type of person who gets tired of other people so fast but i never get tired of you. i love spending time just the two of us it never gets old", images: ["/may18_1.jpeg", "/may18_2.jpeg"] },
+  { date: "7/11/26", label: "july 11",                 body: "can you believe it's been a year already? cant wait for more adventures with you this year! i loveee you" },
 ];
 
 const N    = MILESTONES.length;
@@ -79,15 +80,17 @@ export default function WheelSection() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [dragging,  setDragging]  = useState(false);
 
-  const rotRef     = useRef(90);
-  const dragRef    = useRef(false);
-  const startAng   = useRef(0);
-  const startRot   = useRef(0);
-  const rafRef     = useRef<number | null>(null);
-  const wheelRef   = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const accumRef   = useRef(0);
-  const lastFire   = useRef(0);
+  const rotRef      = useRef(90);
+  const dragRef     = useRef(false);
+  const startAng    = useRef(0);
+  const startRot    = useRef(0);
+  const rafRef      = useRef<number | null>(null);
+  const wheelRef    = useRef<HTMLDivElement>(null);
+  const sectionRef  = useRef<HTMLDivElement>(null);
+  const scrubberRef = useRef<HTMLDivElement>(null);
+  const scrubDrag   = useRef(false);
+  const accumRef    = useRef(0);
+  const lastFire    = useRef(0);
 
   const getAngle = useCallback((cx: number, cy: number) => {
     const el = wheelRef.current;
@@ -182,6 +185,15 @@ export default function WheelSection() {
     return () => el.removeEventListener("wheel", handler);
   }, [snap]);
 
+  const snapFromScrubY = useCallback((clientY: number) => {
+    const el = scrubberRef.current;
+    if (!el) return;
+    const { top, height } = el.getBoundingClientRect();
+    const t   = Math.max(0, Math.min(1, (clientY - top) / height));
+    const idx = Math.round(t * (N - 1));
+    snap(idx);
+  }, [snap]);
+
   // Arrow key navigation through timeline items
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -250,6 +262,7 @@ export default function WheelSection() {
             {/* Items — dot at cx=30 (screen-east = ITEM_R+30), date right of dot.
                 Active item gets full dark color; others are dimmed. */}
             {MILESTONES.map((item, i) => {
+              if (Math.abs(i - activeIdx) > 8) return null;
               const deg      = i * STEP;
               const rad      = (deg - 90) * (Math.PI / 180);
               const tx       = CX + ITEM_R * Math.cos(rad);
@@ -419,6 +432,79 @@ export default function WheelSection() {
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      {/* Right-side timeline scrubber */}
+      <div
+        style={{
+          position: "absolute",
+          right: "1.8rem",
+          top: "50%",
+          transform: "translateY(-50%)",
+          height: "min(72vh, 560px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 10px",
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+        onPointerDown={e => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          scrubDrag.current = true;
+          snapFromScrubY(e.clientY);
+        }}
+        onPointerMove={e => {
+          if (!scrubDrag.current) return;
+          snapFromScrubY(e.clientY);
+        }}
+        onPointerUp={() => { scrubDrag.current = false; }}
+        onPointerCancel={() => { scrubDrag.current = false; }}
+      >
+        {/* Track */}
+        <div
+          ref={scrubberRef}
+          style={{
+            position: "relative",
+            width: 2,
+            height: "100%",
+            background: "#e4e2de",
+            borderRadius: 2,
+          }}
+        >
+          {/* Filled portion */}
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: `${(activeIdx / (N - 1)) * 100}%`,
+            background: "#1a1a1a",
+            borderRadius: 2,
+            transition: "height 0.22s ease",
+          }} />
+          {/* Dots */}
+          {MILESTONES.map((_, i) => {
+            const isActive = i === activeIdx;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: `${(i / (N - 1)) * 100}%`,
+                  transform: "translate(-50%, -50%)",
+                  width:  isActive ? 8 : 5,
+                  height: isActive ? 8 : 5,
+                  borderRadius: "50%",
+                  background: isActive ? "#1a1a1a" : i < activeIdx ? "#1a1a1a" : "#ccc9c6",
+                  transition: "all 0.22s ease",
+                  zIndex: 1,
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
     </section>
