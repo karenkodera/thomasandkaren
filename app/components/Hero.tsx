@@ -13,8 +13,6 @@ function charDelay(char: string, prev: string): number {
   return 75 + Math.random() * 95;
 }
 
-// ─── Hearts — all going upward, asymmetrical spread ──────────────────────────
-
 const PARTICLES = [
   { dx:  -15, dy: -170, size: 16, delay: 0.00 },
   { dx:   60, dy: -155, size: 12, delay: 0.02 },
@@ -53,12 +51,7 @@ function HeartBurst() {
             userSelect: "none",
           }}
           initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-          animate={{
-            x: p.dx,
-            y: p.dy,
-            opacity: [1, 1, 0],
-            scale: [0, 1.4, 1],
-          }}
+          animate={{ x: p.dx, y: p.dy, opacity: [1, 1, 0], scale: [0, 1.4, 1] }}
           transition={{ duration: 1.0, delay: p.delay, ease: "easeOut" }}
         >
           ♥
@@ -67,8 +60,6 @@ function HeartBurst() {
     </>
   );
 }
-
-// ─── Hero ─────────────────────────────────────────────────────────────────────
 
 export default function Hero() {
   const [displayed,  setDisplayed]  = useState("");
@@ -123,6 +114,10 @@ export default function Hero() {
         background: "#fff",
       }}
     >
+      {/*
+        Both elements are always rendered so layout is stable from the start.
+        The typewriter text never jumps because the space below it is always reserved.
+      */}
       <div
         style={{
           display: "flex",
@@ -131,9 +126,8 @@ export default function Hero() {
           gap: "1.6rem",
         }}
       >
-        <motion.p
-          layout={done ? "position" : false}
-          transition={{ type: "spring", stiffness: 420, damping: 42 }}
+        {/* Typewriter text — static position, no layout animation */}
+        <p
           style={{
             margin: 0,
             fontFamily: "var(--font-great-vibes)",
@@ -146,65 +140,56 @@ export default function Hero() {
         >
           {displayed}
           <span style={{ opacity: cursorVisible ? 1 : 0 }}>|</span>
-        </motion.p>
+        </p>
 
-        {showDays && (
-          <motion.div
-            initial={{ opacity: 0, y: 28, scale: 0.88 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+        {/* HAPPY 365 DAYS! — always rendered to hold space; fades in when showDays */}
+        <motion.div
+          initial={false}
+          animate={showDays
+            ? { opacity: 1, y: 0, scale: 1 }
+            : { opacity: 0, y: 28, scale: 0.88 }
+          }
+          transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div
+            style={{
+              fontSize: "clamp(3.5rem, 11vw, 5.5rem)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25em",
+              fontFamily: "var(--font-montserrat)",
+              fontWeight: 800,
+              color: "#000",
+              lineHeight: 1,
+            }}
           >
-            {/*
-              Parent sets the shared font-size context.
-              "happy" and "days" are 50% of that, bottom-aligned with 365.
-            */}
-            <div
-              style={{
-                fontSize: "clamp(3.5rem, 11vw, 5.5rem)",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.25em",
-                fontFamily: "var(--font-montserrat)",
-                fontWeight: 800,
-                color: "#000",
-                lineHeight: 1,
-              }}
-            >
-              {/* "happy" */}
-              <span style={{ fontSize: "0.48em", lineHeight: 1 }}>happy</span>
+            {/* HAPPY — fixed width so the number animation doesn't shift it */}
+            <span style={{ fontSize: "0.48em", lineHeight: 1 }}>HAPPY</span>
 
-              {/* Slot-machine number — hearts burst from this element */}
-              <div style={{ position: "relative" }}>
-                <div
+            {/* Slot-machine number — fixed width prevents DAYS! from jumping */}
+            <div style={{ position: "relative", minWidth: "1.65em", textAlign: "center" }}>
+              <div style={{ overflow: "hidden", height: "1em", lineHeight: 1 }}>
+                <span
+                  key={flipNum}
                   style={{
-                    overflow: "hidden",
-                    height: "1em",
+                    display: "block",
+                    fontSize: "inherit",
+                    fontWeight: "inherit",
+                    color: "inherit",
                     lineHeight: 1,
+                    animation: "slot-up 0.085s ease-out both",
                   }}
                 >
-                  <span
-                    key={flipNum}
-                    style={{
-                      display: "block",
-                      fontSize: "inherit",
-                      fontWeight: "inherit",
-                      color: "inherit",
-                      lineHeight: 1,
-                      animation: "slot-up 0.085s ease-out both",
-                    }}
-                  >
-                    {flipNum}
-                  </span>
-                </div>
-
-                {celebrate && <HeartBurst />}
+                  {flipNum}
+                </span>
               </div>
-
-              {/* "days" */}
-              <span style={{ fontSize: "0.48em", lineHeight: 1 }}>days</span>
+              {celebrate && <HeartBurst />}
             </div>
-          </motion.div>
-        )}
+
+            {/* DAYS! */}
+            <span style={{ fontSize: "0.48em", lineHeight: 1 }}>DAYS!</span>
+          </div>
+        </motion.div>
       </div>
     </main>
   );

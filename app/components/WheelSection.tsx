@@ -33,22 +33,25 @@ const MILESTONES = [
 const N    = MILESTONES.length;
 const STEP = 360 / N;
 
-const S       = 2200;
-const CX      = S / 2;
-const CY      = S / 2;
-const GEAR_R  = 970;
-const TOOTH_H = 72;
-const GEAR_O  = GEAR_R + TOOTH_H;
-const N_TEETH = 36;
-const ITEM_R  = 912;
-const RING_R  = ITEM_R + 30;
+const S        = 2200;
+const CX       = S / 2;      // 1100
+const CY       = S / 2;      // 1100
+
+// Inner decorative gear (sits inside the date ring)
+const GEAR_R   = 640;
+const TOOTH_H  = 55;
+const GEAR_O   = GEAR_R + TOOTH_H;  // 695
+const N_TEETH  = 36;
+
+// Outer date ring (larger than gear)
+const ITEM_R   = 920;
+const OUTER_R  = ITEM_R + 40;       // 960 — full disc boundary
 
 // Landscape aperture at east (clock-3)
-// Wider window to fit dates like "10/31/25"
-const WIN_W = 310;
-const WIN_H = 88;
-const WIN_X = CX + ITEM_R - WIN_W / 2;
-const WIN_Y = CY - WIN_H / 2;
+const WIN_W    = 310;
+const WIN_H    = 88;
+const WIN_X    = CX + ITEM_R - WIN_W / 2;   // 1865
+const WIN_Y    = CY - WIN_H / 2;             // 1056
 
 function buildGear(): string {
   const step = (2 * Math.PI) / N_TEETH;
@@ -205,11 +208,12 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
         alignItems: "center",
       }}
     >
-      {/* Volvelle wheel — only east arc visible */}
+      {/* Volvelle wheel — only east arc visible.
+          Container positioned so the outer date ring edge (OUTER_R) lands at ~22vw. */}
       <div
         style={{
           position: "absolute",
-          left: `calc(22vw - ${CX + GEAR_O}px)`,
+          left: `calc(22vw - ${CX + OUTER_R}px)`,
           top: "50%",
           transform: "translateY(-50%)",
           width: S,
@@ -233,34 +237,41 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           onPointerCancel={onPointerUp}
         >
           <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} style={{ display: "block" }}>
-            {/* Gear teeth — same fill as wheel face, no stroke */}
-            <path d={GEAR_PATH} fill="#f4f3f1" />
-            {/* Wheel face on top of gear path (same color, seamless) */}
+            {/* Full disc background */}
+            <circle cx={CX} cy={CY} r={OUTER_R} fill="#f4f3f1" />
+
+            {/* Inner gear — smaller, sits well inside the date ring */}
+            <path d={GEAR_PATH} fill="#eceae8" />
+            {/* Flat gear face (covers gear interior) */}
             <circle cx={CX} cy={CY} r={GEAR_R} fill="#f4f3f1" />
-            {/* Outer ring */}
-            <circle cx={CX} cy={CY} r={RING_R} fill="none" stroke="#dcdad8" strokeWidth="1.5" />
-            {/* Inner decorative ring */}
-            <circle cx={CX} cy={CY} r={80} fill="none" stroke="#dcdad8" strokeWidth="1" />
+
+            {/* Subtle ring between gear and date zone */}
+            <circle cx={CX} cy={CY} r={GEAR_O + 28} fill="none" stroke="#dcdad8" strokeWidth="1" />
+            {/* Date ring */}
+            <circle cx={CX} cy={CY} r={ITEM_R} fill="none" stroke="#dcdad8" strokeWidth="1.5" />
+
             {/* Center pivot */}
             <circle cx={CX} cy={CY} r={52} fill="#e2e0de" stroke="#c4c2c0" strokeWidth="1.2" />
             <circle cx={CX} cy={CY} r={38} fill="#eeeceb" />
             <circle cx={CX} cy={CY} r={10} fill="#b0aeac" />
 
-            {/* Items — dot + date text, both in counter-rotated frame so they stay upright.
-                cx="30" in this frame = screen-east by 30px = RING_R distance from center.
-                x="44" textAnchor="start" = date starts 14px to the right of the dot. */}
+            {/* Items — dot at cx=30 (screen-east = ITEM_R+30), date right of dot.
+                Active item gets full dark color; others are dimmed. */}
             {MILESTONES.map((item, i) => {
-              const deg = i * STEP;
-              const rad = (deg - 90) * (Math.PI / 180);
-              const tx  = CX + ITEM_R * Math.cos(rad);
-              const ty  = CY + ITEM_R * Math.sin(rad);
+              const deg      = i * STEP;
+              const rad      = (deg - 90) * (Math.PI / 180);
+              const tx       = CX + ITEM_R * Math.cos(rad);
+              const ty       = CY + ITEM_R * Math.sin(rad);
+              const isActive = i === activeIdx;
+              const dotFill  = isActive ? "#1a1a1a" : "#c8c6c4";
+              const textFill = isActive ? "#2a2828" : "#c5c3c1";
               return (
                 <g
                   key={i}
                   transform={`translate(${tx},${ty}) rotate(${-rotation})`}
                   style={{ pointerEvents: "none" }}
                 >
-                  <circle cx="30" cy="0" r="5" fill="#1a1a1a" />
+                  <circle cx="30" cy="0" r="5" fill={dotFill} />
                   <text
                     x="44"
                     y="7"
@@ -269,7 +280,7 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
                       fontFamily: "var(--font-montserrat)",
                       fontSize: "18px",
                       fontWeight: 700,
-                      fill: "#2a2828",
+                      fill: textFill,
                       letterSpacing: "-0.2px",
                     }}
                   >
@@ -290,7 +301,8 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
         >
           <defs>
             <mask id="aperture-mask">
-              <circle cx={CX} cy={CY} r={GEAR_R} fill="white" />
+              {/* Cover the full disc so frosting applies to everything */}
+              <circle cx={CX} cy={CY} r={OUTER_R} fill="white" />
               {/* Landscape cutout at east */}
               <rect x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H} rx={6} fill="black" />
             </mask>
