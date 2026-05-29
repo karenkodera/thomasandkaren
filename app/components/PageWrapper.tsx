@@ -5,6 +5,7 @@ import { motion, useMotionValue, animate } from "framer-motion";
 import Hero from "./Hero";
 import WheelSection from "./WheelSection";
 import ReasonsSection from "./ReasonsSection";
+import WhatNextSection from "./WhatNextSection";
 
 export default function PageWrapper() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -14,7 +15,7 @@ export default function PageWrapper() {
   const lastWheel = useRef(0);
 
   const transitionTo = useCallback(
-    (target: 0 | 1 | 2) => {
+    (target: 0 | 1 | 2 | 3) => {
       if (animating.current) return;
       animating.current = true;
 
@@ -63,6 +64,13 @@ export default function PageWrapper() {
           <ReasonsSection
             isActive={currentSlide === 2}
             onScrollUp={() => transitionTo(1)}
+            onScrollDown={() => transitionTo(3)}
+          />
+        </div>
+        <div style={{ height: "100vh" }}>
+          <WhatNextSection
+            isActive={currentSlide === 3}
+            onScrollUp={() => transitionTo(2)}
           />
         </div>
       </motion.div>

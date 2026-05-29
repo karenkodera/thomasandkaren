@@ -44,8 +44,9 @@ const ITEM_R  = 912;
 const RING_R  = ITEM_R + 30;
 
 // Landscape aperture at east (clock-3)
-const WIN_W = 260;
-const WIN_H = 100;
+// Wider window to fit dates like "10/31/25"
+const WIN_W = 310;
+const WIN_H = 88;
 const WIN_X = CX + ITEM_R - WIN_W / 2;
 const WIN_Y = CY - WIN_H / 2;
 
@@ -245,21 +246,9 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
             <circle cx={CX} cy={CY} r={38} fill="#eeeceb" />
             <circle cx={CX} cy={CY} r={10} fill="#b0aeac" />
 
-            {/* Black dot at each item position on the ring */}
-            {Array.from({ length: N }, (_, i) => {
-              const a = (i * STEP - 90) * (Math.PI / 180);
-              return (
-                <circle
-                  key={i}
-                  cx={CX + RING_R * Math.cos(a)}
-                  cy={CY + RING_R * Math.sin(a)}
-                  r={5}
-                  fill="#1a1a1a"
-                />
-              );
-            })}
-
-            {/* Items — counter-rotate by current wheel rotation to keep text upright */}
+            {/* Items — dot + date text, both in counter-rotated frame so they stay upright.
+                cx="30" in this frame = screen-east by 30px = RING_R distance from center.
+                x="44" textAnchor="start" = date starts 14px to the right of the dot. */}
             {MILESTONES.map((item, i) => {
               const deg = i * STEP;
               const rad = (deg - 90) * (Math.PI / 180);
@@ -271,31 +260,20 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
                   transform={`translate(${tx},${ty}) rotate(${-rotation})`}
                   style={{ pointerEvents: "none" }}
                 >
+                  <circle cx="30" cy="0" r="5" fill="#1a1a1a" />
                   <text
-                    y="-6"
-                    textAnchor="middle"
+                    x="44"
+                    y="7"
+                    textAnchor="start"
                     style={{
                       fontFamily: "var(--font-montserrat)",
-                      fontSize: "38px",
-                      fontWeight: 800,
+                      fontSize: "18px",
+                      fontWeight: 700,
                       fill: "#2a2828",
-                      letterSpacing: "-0.5px",
+                      letterSpacing: "-0.2px",
                     }}
                   >
                     {item.date}
-                  </text>
-                  <text
-                    y="26"
-                    textAnchor="middle"
-                    style={{
-                      fontFamily: "var(--font-montserrat)",
-                      fontSize: "14px",
-                      fontWeight: 400,
-                      fill: "#9a9896",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    {item.label}
                   </text>
                 </g>
               );

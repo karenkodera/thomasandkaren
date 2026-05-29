@@ -29,9 +29,10 @@ const REASONS = [
 interface Props {
   isActive: boolean;
   onScrollUp: () => void;
+  onScrollDown: () => void;
 }
 
-export default function ReasonsSection({ isActive, onScrollUp }: Props) {
+export default function ReasonsSection({ isActive, onScrollUp, onScrollDown }: Props) {
   const [idx, setIdx] = useState(-1);
   const sectionRef = useRef<HTMLDivElement>(null);
   const accumRef = useRef(0);
@@ -39,8 +40,10 @@ export default function ReasonsSection({ isActive, onScrollUp }: Props) {
 
   const isActiveRef = useRef(isActive);
   const onScrollUpRef = useRef(onScrollUp);
+  const onScrollDownRef = useRef(onScrollDown);
   isActiveRef.current = isActive;
   onScrollUpRef.current = onScrollUp;
+  onScrollDownRef.current = onScrollDown;
 
   const handleGenerate = () => {
     setIdx(prev => (prev + 1) % REASONS.length);
@@ -68,6 +71,9 @@ export default function ReasonsSection({ isActive, onScrollUp }: Props) {
       if (dir < 0) {
         lastFireRef.current = now + 700;
         onScrollUpRef.current();
+      } else {
+        lastFireRef.current = now + 700;
+        onScrollDownRef.current();
       }
     };
 
@@ -187,7 +193,7 @@ export default function ReasonsSection({ isActive, onScrollUp }: Props) {
             textAlign: "center",
           }}
         >
-          scroll up to go back
+          scroll to navigate
         </div>
       </div>
     </section>
