@@ -237,13 +237,10 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           onPointerCancel={onPointerUp}
         >
           <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} style={{ display: "block" }}>
-            {/* Full disc background */}
-            <circle cx={CX} cy={CY} r={OUTER_R} fill="#f4f3f1" />
-
-            {/* Inner gear — smaller, sits well inside the date ring */}
-            <path d={GEAR_PATH} fill="#eceae8" />
-            {/* Flat gear face (covers gear interior) */}
-            <circle cx={CX} cy={CY} r={GEAR_R} fill="#f4f3f1" />
+            {/* Inner gear — visible against section background */}
+            <path d={GEAR_PATH} fill="#d8d4ce" stroke="#c4c0ba" strokeWidth="0.8" />
+            {/* Gear flat face */}
+            <circle cx={CX} cy={CY} r={GEAR_R} fill="#f0efed" />
 
             {/* Subtle ring between gear and date zone */}
             <circle cx={CX} cy={CY} r={GEAR_O + 28} fill="none" stroke="#dcdad8" strokeWidth="1" />
@@ -292,32 +289,19 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
           </svg>
         </div>
 
-        {/* Fixed aperture overlay — does not rotate */}
+        {/* Fixed aperture frame — no frosted overlay, just the selector rectangle */}
         <svg
           style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}
           width={S}
           height={S}
           viewBox={`0 0 ${S} ${S}`}
         >
-          <defs>
-            <mask id="aperture-mask">
-              {/* Cover the full disc so frosting applies to everything */}
-              <circle cx={CX} cy={CY} r={OUTER_R} fill="white" />
-              {/* Landscape cutout at east */}
-              <rect x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H} rx={6} fill="black" />
-            </mask>
-          </defs>
-
-          {/* Frosted overlay with clear window */}
-          <rect width={S} height={S} fill="rgba(242,241,239,0.78)" mask="url(#aperture-mask)" />
-
-          {/* Window frame */}
+          {/* Aperture frame */}
           <rect
             x={WIN_X} y={WIN_Y} width={WIN_W} height={WIN_H}
             rx={6} fill="none" stroke="#3a3836" strokeWidth="1.8"
           />
-
-          {/* Arrow pointing left toward wheel center */}
+          {/* Arrow indicator */}
           <polygon
             points={`${WIN_X - 2},${CY - 6} ${WIN_X - 2},${CY + 6} ${WIN_X - 12},${CY}`}
             fill="#3a3836"
@@ -325,14 +309,14 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
         </svg>
       </div>
 
-      {/* Right panel — active memory detail */}
+      {/* Right panel — active memory detail, positioned past the wheel arc */}
       <div
         style={{
           position: "absolute",
-          left: "28vw",
+          left: "calc(22vw + 140px)",
           top: "50%",
           transform: "translateY(-50%)",
-          width: "clamp(220px, 32vw, 340px)",
+          width: "clamp(300px, 38vw, 460px)",
         }}
       >
         <AnimatePresence mode="wait">
@@ -343,11 +327,11 @@ export default function WheelSection({ isActive, onScrollUp, onScrollDown }: Pro
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.22 }}
           >
-            {/* Placeholder image */}
+            {/* Placeholder image — larger */}
             <div
               style={{
                 width: "100%",
-                aspectRatio: "4/3",
+                height: "clamp(220px, 30vh, 360px)",
                 background: "#ececea",
                 border: "1.5px dashed #ccc",
                 borderRadius: 10,

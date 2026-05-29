@@ -108,17 +108,18 @@ export default function ReasonsSection({ isActive, onScrollUp, onScrollDown }: P
 
         {/* Field + button */}
         <div style={{ display: "flex", gap: "0.8rem", alignItems: "flex-start" }}>
-          {/* Display field */}
+          {/* Display field — single line */}
           <div
             style={{
               flex: 1,
-              minHeight: 110,
+              height: "3rem",
               border: "1.5px solid #e8e8e8",
               borderRadius: 10,
-              padding: "1rem 1.1rem",
+              padding: "0 1.1rem",
               background: "#fafafa",
               display: "flex",
-              alignItems: "flex-start",
+              alignItems: "center",
+              overflow: "hidden",
             }}
           >
             <AnimatePresence mode="wait">
@@ -131,9 +132,12 @@ export default function ReasonsSection({ isActive, onScrollUp, onScrollDown }: P
                   transition={{ duration: 0.4 }}
                   style={{
                     fontFamily: "var(--font-great-vibes)",
-                    fontSize: "clamp(1.4rem, 2.8vw, 2rem)",
+                    fontSize: "clamp(1.1rem, 1.8vw, 1.5rem)",
                     color: "#111",
-                    lineHeight: 1.45,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {REASONS[idx]}
